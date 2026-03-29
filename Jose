@@ -3,9 +3,24 @@ import telebot
 import random
 import requests
 
-# Configuración del Token
+# Tu Token de siempre
 TOKEN = "8318255207:AAE5MbIFxhrn0yuNUB2ousq2ENgvUR0QaJo"
 bot = telebot.TeleBot(TOKEN)
+
+def get_bin_info(bin_num):
+    try:
+        response = requests.get(f"https://lookup.binlist.net/{bin_num[:6]}")
+        if response.status_code == 200:
+            data = response.json()
+            banco = data.get('bank', {}).get('name', 'Desconocido')
+            pais = data.get('country', {}).get('name', 'Desconocido')
+            emoji = data.get('country', {}).get('emoji', '🏳️')
+            tipo = data.get('type', 'Desconocido').capitalize()
+            nivel = data.get('brand', 'Desconocido')
+            return f"🏦 **Banco:** {banco}\n🌍 **País:** {pais} {emoji}\n💳 **Tipo:** {nivel} {tipo}"
+    except:
+        pass
+    return "❌ Información de Banco no encontrada."
 
 def luhn_check(n):
     r = [int(ch) for ch in str(n)][::-1]
@@ -13,12 +28,13 @@ def luhn_check(n):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "✅ **Sistema VIP Activo**\n\nUsa /gen [BIN] para generar.")
+    bot.reply_to(message, "✅ **Generador PRO Activo**\n\nUsa /gen [BIN] para obtener info y tarjetas.")
 
 @bot.message_handler(commands=['gen'])
 def generate_cards(message):
     try:
         bin_num = message.text.split()[1]
+        info = get_bin_info(bin_num)
         results = []
         for _ in range(10):
             card = bin_num
@@ -32,10 +48,10 @@ def generate_cards(message):
                     results.append(f"`{card}{last_digit}|{month}|{year}|{cvv}`")
                     break
         
-        response = "✨ **Tarjetas Generadas:**\n\n" + "\n".join(results)
+        response = f"✨ **Detalles del BIN:**\n{info}\n\n📝 **Tarjetas:**\n" + "\n".join(results)
         bot.reply_to(message, response, parse_mode="Markdown")
     except Exception:
         bot.reply_to(message, "❌ Usa: `/gen 123456`", parse_mode="Markdown")
 
-print("Bot iniciado...")
+print("Bot Pro iniciado...")
 bot.infinity_polling()
