@@ -1,8 +1,10 @@
+
 import telebot
 import random
 import requests
 
-TOKEN = "8318255207:AAE5MbIFxhrn0yuNUB2ousq2ENGvUR0QaJo"
+# Configuración del Token
+TOKEN = "8318255207:AAE5MbIFxhrn0yuNUB2ousq2ENgvUR0QaJo"
 bot = telebot.TeleBot(TOKEN)
 
 def luhn_check(n):
@@ -11,7 +13,7 @@ def luhn_check(n):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "✅ **Sistema VIP Activo**\n\nUsa `/gen [bin]` para generar.\nUsa `/info [bin]` para ver el banco.", parse_mode="Markdown")
+    bot.reply_to(message, "✅ **Sistema VIP Activo**\n\nUsa /gen [BIN] para generar.")
 
 @bot.message_handler(commands=['gen'])
 def generate_cards(message):
@@ -22,23 +24,18 @@ def generate_cards(message):
             card = bin_num
             while len(card) < 15:
                 card += str(random.randint(0, 9))
-            for i in range(10):
-                if luhn_check(card + str(i)):
-                    card += str(i)
+            for last_digit in range(10):
+                if luhn_check(card + str(last_digit)):
+                    month = str(random.randint(1, 12)).zfill(2)
+                    year = str(random.randint(2025, 2030))
+                    cvv = str(random.randint(100, 999))
+                    results.append(f"`{card}{last_digit}|{month}|{year}|{cvv}`")
                     break
-            results.append(f"`{card}|{random.randint(1,12):02}|{random.randint(2025,2030)}|{random.randint(100,999)}`")
-        bot.reply_to(message, "🔥 **Generadas:**\n\n" + "\n".join(results), parse_mode="Markdown")
-    except:
-        bot.reply_to(message, "Uso: `/gen 453215`")
+        
+        response = "✨ **Tarjetas Generadas:**\n\n" + "\n".join(results)
+        bot.reply_to(message, response, parse_mode="Markdown")
+    except Exception:
+        bot.reply_to(message, "❌ Usa: `/gen 123456`", parse_mode="Markdown")
 
-@bot.message_handler(commands=['info'])
-def check_bin(message):
-    try:
-        card_num = message.text.split()[1][:6]
-        data = requests.get(f"https://lookup.binlist.net/{card_num}").json()
-        info = (f"🔍 **INFO:**\n🏦 **Banco:** {data.get('bank',{}).get('name','?')}\n🌍 **País:** {data.get('country',{}).get('name','?')} {data.get('country',{}).get('emoji','')}")
-        bot.reply_to(message, info, parse_mode="Markdown")
-    except:
-        bot.reply_to(message, "❌ No hay info.")
-
+print("Bot iniciado...")
 bot.infinity_polling()
